@@ -1,0 +1,515 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>skeleton</title><meta name="generator" content="MATLAB 8.5"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2015-07-16"><meta name="DC.source" content="skeleton.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><pre class="codeinput"><span class="keyword">function</span> S=skeleton(I,verbose)
+<span class="comment">% This function Skeleton will calculate an accurate skeleton (centerlines)</span>
+<span class="comment">% of an object represented by an binary image / volume using the fastmarching</span>
+<span class="comment">% distance transform.</span>
+<span class="comment">%</span>
+<span class="comment">% S=skeleton(I,verbose)</span>
+<span class="comment">%</span>
+<span class="comment">% inputs,</span>
+<span class="comment">%	I : A 2D or 3D binary image</span>
+<span class="comment">%	verbose : Boolean, set to true (default) for debug information</span>
+<span class="comment">%</span>
+<span class="comment">% outputs</span>
+<span class="comment">%   S : Cell array with the centerline coordinates of the skeleton branches</span>
+<span class="comment">%</span>
+<span class="comment">% Literature</span>
+<span class="comment">%   Robert van Uitert and Ingmar Bitter : "Subvoxel precise skeletons of volumetric</span>
+<span class="comment">%	data base on fast marching methods", 2007.</span>
+<span class="comment">%</span>
+<span class="comment">% Example 2D,</span>
+<span class="comment">%</span>
+<span class="comment">% % Read Blood vessel image</span>
+<span class="comment">%   I=im2double(rgb2gray(imread('images/vessels2d.png')));</span>
+<span class="comment">%</span>
+<span class="comment">% % Convert double image to logical</span>
+<span class="comment">%   Ibin=I&lt;0.5;</span>
+<span class="comment">%</span>
+<span class="comment">% % Use fastmarching to find the skeleton</span>
+<span class="comment">%   S=skeleton(Ibin);</span>
+<span class="comment">% % Display the skeleton</span>
+<span class="comment">%   figure, imshow(Ibin); hold on;</span>
+<span class="comment">%   for i=1:length(S)</span>
+<span class="comment">%     L=S{i};</span>
+<span class="comment">%     plot(L(:,2),L(:,1),'-','Color',rand(1,3));</span>
+<span class="comment">%   end</span>
+<span class="comment">%</span>
+<span class="comment">%</span>
+<span class="comment">%  Example 3D,</span>
+<span class="comment">%</span>
+<span class="comment">% % Read Blood vessel image</span>
+<span class="comment">%   load('images/vessels3d');</span>
+<span class="comment">% % Note, this data is pre-processed from Dicom ConeBeam-CT with</span>
+<span class="comment">% % V = imfill(Vraw &gt; 30000,'holes');</span>
+<span class="comment">%</span>
+<span class="comment">% % Use fastmarching to find the skeleton</span>
+<span class="comment">%   S=skeleton(V);</span>
+<span class="comment">%</span>
+<span class="comment">%</span>
+<span class="comment">% % Show the iso-surface of the vessels</span>
+<span class="comment">% figure,</span>
+<span class="comment">%   FV = isosurface(V,0.5)</span>
+<span class="comment">%   patch(FV,'facecolor',[1 0 0],'facealpha',0.3,'edgecolor','none');</span>
+<span class="comment">%   view(3)</span>
+<span class="comment">%   camlight</span>
+<span class="comment">% % Display the skeleton</span>
+<span class="comment">%   hold on;</span>
+<span class="comment">%   for i=1:length(S)</span>
+<span class="comment">%     L=S{i};</span>
+<span class="comment">%     plot3(L(:,2),L(:,1),L(:,3),'-','Color',rand(1,3));</span>
+<span class="comment">%   end</span>
+
+<span class="keyword">if</span>(nargin&lt;2), verbose=true; <span class="keyword">end</span>
+
+<span class="keyword">if</span>(size(I,3)&gt;1), IS3D=true; <span class="keyword">else</span> IS3D=false; <span class="keyword">end</span>
+
+<span class="comment">% Distance to vessel boundary</span>
+BoundaryDistance=getBoundaryDistance(I,IS3D);
+<span class="keyword">if</span>(verbose),
+    disp(<span class="string">'Distance Map Constructed'</span>);
+<span class="keyword">end</span>
+
+<span class="comment">% Get maximum distance value, which is used as starting point of the</span>
+<span class="comment">% first skeleton branch</span>
+[SourcePoint,maxD]=maxDistancePoint(BoundaryDistance,I,IS3D);
+
+<span class="comment">% Make a fastmarching speed image from the distance image</span>
+SpeedImage=(BoundaryDistance/maxD).^4;
+SpeedImage(SpeedImage==0)=1e-10;
+
+<span class="comment">% Skeleton segments found by fastmarching</span>
+SkeletonSegments=cell(1,1000);
+
+<span class="comment">% Number of skeleton iterations</span>
+itt=0;
+
+<span class="keyword">while</span>(true)
+    <span class="keyword">if</span>(verbose),
+        disp([<span class="string">'Find Branches Iterations : '</span> num2str(itt)]);
+    <span class="keyword">end</span>
+
+    <span class="comment">% Do fast marching using the maximum distance value in the image</span>
+    <span class="comment">% and the points describing all found branches are sourcepoints.</span>
+    [T,Y] =  msfm(SpeedImage, SourcePoint, false, false);
+
+    <span class="comment">% Trace a branch back to the used sourcepoints</span>
+    StartPoint=maxDistancePoint(Y,I,IS3D);
+
+    ShortestLine=shortestpath(T,StartPoint,SourcePoint,1,<span class="string">'rk4'</span>);
+    <span class="comment">% Calculate the length of the new skeleton segment</span>
+    linelength=GetLineLength(ShortestLine,IS3D);
+
+    <span class="comment">% Stop finding branches, if the lenght of the new branch is smaller</span>
+    <span class="comment">% then the diameter of the largest vessel</span>
+    <span class="keyword">if</span>(linelength&lt;maxD*2), <span class="keyword">break</span>; <span class="keyword">end</span>;
+
+    <span class="comment">% Store the found branch skeleton</span>
+    itt=itt+1;
+    SkeletonSegments{itt}=ShortestLine;
+
+    <span class="comment">% Add found branche to the list of fastmarching SourcePoints</span>
+    SourcePoint=[SourcePoint ShortestLine'];
+<span class="keyword">end</span>
+SkeletonSegments(itt+1:end)=[];
+S=OrganizeSkeleton(SkeletonSegments,IS3D);
+<span class="keyword">if</span>(verbose),
+    disp([<span class="string">'Skeleton Branches Found : '</span> num2str(length(S))]);
+<span class="keyword">end</span>
+
+<span class="keyword">function</span> ll=GetLineLength(L,IS3D)
+<span class="keyword">if</span>(IS3D)
+    dist=sqrt((L(2:end,1)-L(1:end-1,1)).^2+ <span class="keyword">...</span>
+              (L(2:end,2)-L(1:end-1,2)).^2+ <span class="keyword">...</span>
+              (L(2:end,3)-L(1:end-1,3)).^2);
+<span class="keyword">else</span>
+    dist=sqrt((L(2:end,1)-L(1:end-1,1)).^2+ <span class="keyword">...</span>
+              (L(2:end,2)-L(1:end-1,2)).^2);
+<span class="keyword">end</span>
+ll=sum(dist);
+
+
+<span class="keyword">function</span> S=OrganizeSkeleton(SkeletonSegments,IS3D)
+n=length(SkeletonSegments);
+<span class="keyword">if</span>(IS3D)
+    Endpoints=zeros(n*2,3);
+<span class="keyword">else</span>
+    Endpoints=zeros(n*2,2);
+<span class="keyword">end</span>
+l=1;
+<span class="keyword">for</span> w=1:n
+    ss=SkeletonSegments{w};
+    l=max(l,length(ss));
+    Endpoints(w*2-1,:)=ss(1,:);
+    Endpoints(w*2,:)  =ss(end,:);
+<span class="keyword">end</span>
+CutSkel=spalloc(size(Endpoints,1),l,10000);
+ConnectDistance=2^2;
+
+<span class="keyword">for</span> w=1:n
+    ss=SkeletonSegments{w};
+    ex=repmat(Endpoints(:,1),1,size(ss,1));
+    sx=repmat(ss(:,1)',size(Endpoints,1),1);
+    ey=repmat(Endpoints(:,2),1,size(ss,1));
+    sy=repmat(ss(:,2)',size(Endpoints,1),1);
+    <span class="keyword">if</span>(IS3D)
+        ez=repmat(Endpoints(:,3),1,size(ss,1));
+        sz=repmat(ss(:,3)',size(Endpoints,1),1);
+    <span class="keyword">end</span>
+    <span class="keyword">if</span>(IS3D)
+        D=(ex-sx).^2+(ey-sy).^2+(ez-sz).^2;
+    <span class="keyword">else</span>
+        D=(ex-sx).^2+(ey-sy).^2;
+    <span class="keyword">end</span>
+    check=min(D,[],2)&lt;ConnectDistance;
+    check(w*2-1)=false; check(w*2)=false;
+    <span class="keyword">if</span>(any(check))
+        j=find(check);
+        <span class="keyword">for</span> i=1:length(j)
+            line=D(j(i),:);
+            [foo,k]=min(line);
+            <span class="keyword">if</span>((k&gt;2)&amp;&amp;(k&lt;(length(line)-2))), CutSkel(w,k)=1; <span class="keyword">end</span>
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+
+pp=0;
+<span class="keyword">for</span> w=1:n
+    ss=SkeletonSegments{w};
+    r=[1 find(CutSkel(w,:)) length(ss)];
+    <span class="keyword">for</span> i=1:length(r)-1
+        pp=pp+1;
+        S{pp}=ss(r(i):r(i+1),:);
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+
+<span class="keyword">function</span> BoundaryDistance=getBoundaryDistance(I,IS3D)
+<span class="comment">% Calculate Distance to vessel boundary</span>
+
+<span class="comment">% Set all boundary pixels as fastmarching source-points (distance = 0)</span>
+<span class="keyword">if</span>(IS3D),S=ones(3,3,3); <span class="keyword">else</span> S=ones(3,3); <span class="keyword">end</span>
+B=xor(I,imdilate(I,S));
+ind=find(B(:));
+<span class="keyword">if</span>(IS3D)
+    [x,y,z]=ind2sub(size(B),ind);
+    SourcePoint=[x(:) y(:) z(:)]';
+<span class="keyword">else</span>
+    [x,y]=ind2sub(size(B),ind);
+    SourcePoint=[x(:) y(:)]';
+<span class="keyword">end</span>
+
+<span class="comment">% Calculate Distance to boundarypixels for every voxel in the volume</span>
+SpeedImage=ones(size(I));
+BoundaryDistance = msfm(SpeedImage, SourcePoint, false, true);
+
+<span class="comment">% Mask the result by the binary input image</span>
+BoundaryDistance(~I)=0;
+
+<span class="keyword">function</span> [posD,maxD]=maxDistancePoint(BoundaryDistance,I,IS3D)
+<span class="comment">% Mask the result by the binary input image</span>
+BoundaryDistance(~I)=0;
+
+<span class="comment">% Find the maximum distance voxel</span>
+[maxD,ind] = max(BoundaryDistance(:));
+<span class="keyword">if</span>(~isfinite(maxD))
+    error(<span class="string">'Skeleton:Maximum'</span>,<span class="string">'Maximum from MSFM is infinite !'</span>);
+<span class="keyword">end</span>
+
+<span class="keyword">if</span>(IS3D)
+    [x,y,z]=ind2sub(size(I),ind); posD=[x;y;z];
+<span class="keyword">else</span>
+    [x,y]=ind2sub(size(I),ind); posD=[x;y];
+<span class="keyword">end</span>
+</pre><pre class="codeoutput error">Error using skeleton (line 63)
+Not enough input arguments.
+</pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2015a</a><br></p></div><!--
+##### SOURCE BEGIN #####
+function S=skeleton(I,verbose)
+% This function Skeleton will calculate an accurate skeleton (centerlines) 
+% of an object represented by an binary image / volume using the fastmarching 
+% distance transform.
+%
+% S=skeleton(I,verbose)
+%
+% inputs,
+%	I : A 2D or 3D binary image
+%	verbose : Boolean, set to true (default) for debug information
+%
+% outputs
+%   S : Cell array with the centerline coordinates of the skeleton branches
+%
+% Literature
+%   Robert van Uitert and Ingmar Bitter : "Subvoxel precise skeletons of volumetric 
+%	data base on fast marching methods", 2007.
+%
+% Example 2D,
+%
+% % Read Blood vessel image
+%   I=im2double(rgb2gray(imread('images/vessels2d.png')));
+%
+% % Convert double image to logical
+%   Ibin=I<0.5;
+%
+% % Use fastmarching to find the skeleton
+%   S=skeleton(Ibin);
+% % Display the skeleton
+%   figure, imshow(Ibin); hold on;
+%   for i=1:length(S)
+%     L=S{i};
+%     plot(L(:,2),L(:,1),'-','Color',rand(1,3));
+%   end
+%
+%
+%  Example 3D,
+%
+% % Read Blood vessel image
+%   load('images/vessels3d');
+% % Note, this data is pre-processed from Dicom ConeBeam-CT with
+% % V = imfill(Vraw > 30000,'holes');
+%
+% % Use fastmarching to find the skeleton
+%   S=skeleton(V);
+%
+%
+% % Show the iso-surface of the vessels
+% figure,
+%   FV = isosurface(V,0.5)
+%   patch(FV,'facecolor',[1 0 0],'facealpha',0.3,'edgecolor','none');
+%   view(3)
+%   camlight
+% % Display the skeleton
+%   hold on;
+%   for i=1:length(S)
+%     L=S{i};
+%     plot3(L(:,2),L(:,1),L(:,3),'-','Color',rand(1,3));
+%   end
+
+if(nargin<2), verbose=true; end
+
+if(size(I,3)>1), IS3D=true; else IS3D=false; end
+
+% Distance to vessel boundary
+BoundaryDistance=getBoundaryDistance(I,IS3D);
+if(verbose),
+    disp('Distance Map Constructed');
+end
+    
+% Get maximum distance value, which is used as starting point of the
+% first skeleton branch
+[SourcePoint,maxD]=maxDistancePoint(BoundaryDistance,I,IS3D);
+
+% Make a fastmarching speed image from the distance image
+SpeedImage=(BoundaryDistance/maxD).^4;
+SpeedImage(SpeedImage==0)=1e-10;
+
+% Skeleton segments found by fastmarching
+SkeletonSegments=cell(1,1000);
+
+% Number of skeleton iterations
+itt=0;
+
+while(true)
+    if(verbose),
+        disp(['Find Branches Iterations : ' num2str(itt)]);
+    end
+
+    % Do fast marching using the maximum distance value in the image
+    % and the points describing all found branches are sourcepoints.
+    [T,Y] =  msfm(SpeedImage, SourcePoint, false, false);
+      
+    % Trace a branch back to the used sourcepoints
+    StartPoint=maxDistancePoint(Y,I,IS3D);
+    
+    ShortestLine=shortestpath(T,StartPoint,SourcePoint,1,'rk4');
+    % Calculate the length of the new skeleton segment
+    linelength=GetLineLength(ShortestLine,IS3D);
+        
+    % Stop finding branches, if the lenght of the new branch is smaller
+    % then the diameter of the largest vessel
+    if(linelength<maxD*2), break; end;
+    
+    % Store the found branch skeleton
+    itt=itt+1;
+    SkeletonSegments{itt}=ShortestLine;
+    
+    % Add found branche to the list of fastmarching SourcePoints
+    SourcePoint=[SourcePoint ShortestLine'];
+end
+SkeletonSegments(itt+1:end)=[];
+S=OrganizeSkeleton(SkeletonSegments,IS3D);
+if(verbose),
+    disp(['Skeleton Branches Found : ' num2str(length(S))]);
+end
+
+function ll=GetLineLength(L,IS3D)
+if(IS3D)
+    dist=sqrt((L(2:end,1)-L(1:end-1,1)).^2+ ...
+              (L(2:end,2)-L(1:end-1,2)).^2+ ...
+              (L(2:end,3)-L(1:end-1,3)).^2);
+else
+    dist=sqrt((L(2:end,1)-L(1:end-1,1)).^2+ ...
+              (L(2:end,2)-L(1:end-1,2)).^2);
+end
+ll=sum(dist);
+
+    
+function S=OrganizeSkeleton(SkeletonSegments,IS3D)
+n=length(SkeletonSegments);
+if(IS3D)
+    Endpoints=zeros(n*2,3);
+else
+    Endpoints=zeros(n*2,2);
+end
+l=1;
+for w=1:n
+    ss=SkeletonSegments{w};
+    l=max(l,length(ss));
+    Endpoints(w*2-1,:)=ss(1,:); 
+    Endpoints(w*2,:)  =ss(end,:);
+end
+CutSkel=spalloc(size(Endpoints,1),l,10000);
+ConnectDistance=2^2;
+
+for w=1:n
+    ss=SkeletonSegments{w};
+    ex=repmat(Endpoints(:,1),1,size(ss,1));
+    sx=repmat(ss(:,1)',size(Endpoints,1),1);
+    ey=repmat(Endpoints(:,2),1,size(ss,1));
+    sy=repmat(ss(:,2)',size(Endpoints,1),1);
+    if(IS3D)
+        ez=repmat(Endpoints(:,3),1,size(ss,1));
+        sz=repmat(ss(:,3)',size(Endpoints,1),1);
+    end
+    if(IS3D)
+        D=(ex-sx).^2+(ey-sy).^2+(ez-sz).^2;
+    else
+        D=(ex-sx).^2+(ey-sy).^2;
+    end
+    check=min(D,[],2)<ConnectDistance;
+    check(w*2-1)=false; check(w*2)=false;
+    if(any(check))
+        j=find(check);
+        for i=1:length(j)
+            line=D(j(i),:);
+            [foo,k]=min(line);
+            if((k>2)&&(k<(length(line)-2))), CutSkel(w,k)=1; end
+        end
+    end
+end
+
+pp=0;
+for w=1:n
+    ss=SkeletonSegments{w};
+    r=[1 find(CutSkel(w,:)) length(ss)];
+    for i=1:length(r)-1
+        pp=pp+1;
+        S{pp}=ss(r(i):r(i+1),:);
+    end
+end
+
+function BoundaryDistance=getBoundaryDistance(I,IS3D)
+% Calculate Distance to vessel boundary
+
+% Set all boundary pixels as fastmarching source-points (distance = 0)
+if(IS3D),S=ones(3,3,3); else S=ones(3,3); end
+B=xor(I,imdilate(I,S));
+ind=find(B(:));
+if(IS3D)
+    [x,y,z]=ind2sub(size(B),ind);
+    SourcePoint=[x(:) y(:) z(:)]';
+else
+    [x,y]=ind2sub(size(B),ind);
+    SourcePoint=[x(:) y(:)]';
+end
+
+% Calculate Distance to boundarypixels for every voxel in the volume
+SpeedImage=ones(size(I));
+BoundaryDistance = msfm(SpeedImage, SourcePoint, false, true);
+
+% Mask the result by the binary input image
+BoundaryDistance(~I)=0;
+
+function [posD,maxD]=maxDistancePoint(BoundaryDistance,I,IS3D)
+% Mask the result by the binary input image
+BoundaryDistance(~I)=0;
+
+% Find the maximum distance voxel
+[maxD,ind] = max(BoundaryDistance(:));
+if(~isfinite(maxD))
+    error('Skeleton:Maximum','Maximum from MSFM is infinite !');
+end
+
+if(IS3D)
+    [x,y,z]=ind2sub(size(I),ind); posD=[x;y;z];
+else
+    [x,y]=ind2sub(size(I),ind); posD=[x;y];
+end
+
+##### SOURCE END #####
+--></body></html>

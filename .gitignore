@@ -39,3 +39,14 @@ luac.out
 *.x86_64
 *.hex
 
+*.pdf
+*.gif
+*.png
+*.mat
+*.mexa64
+*.v3draw
+*~
+*.asv
+*.t7
+*.h5
+*.log
