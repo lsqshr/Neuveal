@@ -3,6 +3,7 @@ require 'math'
 require 'nn'
 require 'optim'
 require 'math'
+require 'itorch'
 
 local disp = require 'display'
 create = require 'nntrain.create_dcnn'
@@ -25,8 +26,8 @@ local function train(datasource, model, criterion, opt)
 
     print('Start Training')
     local epocherrors = {}
-    local epochwin = disp.plot({}, {labels={'epoch', 'trainerror'}, title='train error'}) 
-    local batchwin = disp.plot({}, {labels={'batch', 'trainerror'}, title='train error'}) 
+    -- local epochwin = disp.plot({}, {labels={'epoch', 'trainerror'}, title='epoch error'}) 
+    -- local batchwin = disp.plot({}, {labels={'batch', 'trainerror'}, title='batch error'}) 
 
     for i = 1, opt.maxEpoch do
         print('epoch: ', i)
@@ -39,7 +40,7 @@ local function train(datasource, model, criterion, opt)
         local batcherrors={}
         for b = 1, opt.nbatch do
             data = datasource:loadbatch(opt, b)
-            local ninput = (#data.inputs)[1]
+            local ninput = data.inputs:size(1)
             local trainerror = 0
             -- Display progress
             xlua.progress(b, opt.nbatch)
@@ -53,26 +54,27 @@ local function train(datasource, model, criterion, opt)
                 grads:zero()
                 local loss = 0
 
+
                 for t = 1, ninput do
                     local output = model:forward(data.inputs[t])
                     local err = criterion:forward(output, data.targets[t])
                     loss = loss + err
 
                     -- backward
-                    local dloss_doutput = criterion:backward(output, data.targets[t])
-                    model:backward(data.inputs[t], dloss_doutput)
-
-                    -- if opt.visualize then
-                    --     display(data.inputs[i])
-                    -- end
+                    model:backward(data.inputs[t], criterion:backward(output, data.targets[t]))
                 end
-
                 grads:div(ninput)
                 loss = loss/ninput
-                trainerror = trainerror + loss
+                trainerror = loss
+                -- trainerror = trainerror + loss
 
                 return loss, grads
             end
+
+            -- if opt.checkgrad then
+            --     print('Checking Gradients')
+            --     optim.checkgrad(feval, params, 1e-9)
+            -- end
 
             -- optimize on current mini-batch
             if opt.optimization == 'CG' then
@@ -88,7 +90,7 @@ local function train(datasource, model, criterion, opt)
                 config = config or {learningRate = opt.learningRate,
                                  weightDecay = opt.weightDecay,
                                  momentum = opt.momentum,
-                                 learningRateDecay = 5e-7}
+                                 learningRateDecay = opt.learningRateDecay}
                 optim.sgd(feval, params, config)
 
             elseif opt.optimization == 'ASGD' then
@@ -100,34 +102,55 @@ local function train(datasource, model, criterion, opt)
                 error('unknown optimization method')
             end
 
+            collectgarbage("collect")
 
             --train error
-            trainerror = trainerror / ninput 
+            -- trainerror = trainerror / ninput 
             if i % opt.print_every == 0 then
                 print(string.format("Epoch %4d, Average loss = %.6f", i, trainerror))
             end
 
             if trainerror == 1/0 or trainerror == 0/0 then
-                table.insert(batcherrors, {i, 1})
+                table.insert(batcherrors, 1)
             else
-                table.insert(batcherrors, {i, trainerror})
+                table.insert(batcherrors, trainerror)
             end
 
-            dispwin = disp.plot(batcherrors, {win=dispwin}) 
+            -- batchwin = disp.plot(batcherrors, {win=batchwin}) 
+            plot = itorch.Plot():line(torch.range(1, b), batcherrors, 'blue', 'batch errors'):legend(true):title('Batch Plot'):draw()
             ncase = ncase + ninput
+
+            -- Visualise weights
+            -- print(#model:get(2).weight)
+            weight = model:get(1).weight
+            weight = torch.max(weight, 3)
+            weight:resize((#weight)[1], 13, 13)
+            itorch.image(weight) 
+
+            weight = model:get(1).weight
+            weight = torch.max(weight, 4)
+            weight:resize((#weight)[1], 13, 13)
+            itorch.image(weight) 
+            
+            weight = model:get(1).weight
+            weight = torch.max(weight, 5)
+            weight:resize((#weight)[1], 13, 13)
+            itorch.image(weight) 
+            -- itorch.image(model:get(2).weight)
         end
 
-        epocherr = torch.mean(trainerror);
+        epocherr = torch.mean(torch.Tensor(batcherrors));
         if epocherr == 1/0 or epocherr == 0/0 then
-            table.insert(epocherrors, {i, 1})
+            table.insert(epocherrors, 1)
         else
-            table.insert(epocherrors, {i, epocherr})
+            table.insert(epocherrors, epocherr)
         end
 
         time = sys.clock() - time
         time = time / ncase
         print("<trainer> time to learn 1 sample = " .. (time*1000) .. 'ms')
-
+        -- epochwin = disp.plot(epocherrors, {win=epochwin}) 
+        plot = itorch.Plot():line(torch.range(1, i), epocherrors, 'red', 'epoch errors'):legend(true):title('Epoch Plot'):draw()
 
         if opt.savemodel then
             local cache = {}

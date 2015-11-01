@@ -28,39 +28,26 @@ function volume3d:loadbatch(opt, b)
     local mattorch = require 'mattorch'
     startidx = 1 + (b - 1) * opt.batchsize
     endidx = startidx + opt.batchsize - 1
-    -- print(string.format('loading blocks from %s/blocks%d-%d.mat', opt.datapath, startidx, endidx))
+    print(string.format('loading blocks from %s/blocks%d-%d.mat', opt.datapath, startidx, endidx))
     data.inputs = mattorch.load(string.format('%s/blocks%d-%d.mat', opt.datapath, startidx, endidx))
     data.inputs = data.inputs['blocks']
+    maxinput = torch.max(data.inputs)
+    maxmat = torch.Tensor(data.inputs:size(1), data.inputs:size(2),
+                          data.inputs:size(3), data.inputs:size(4)):fill(1/maxinput)
+    data.inputs = data.inputs:cmul(maxmat) -- Normalise the inputs
     dsz = #data.inputs
-    -- print('data.inputs size:')
-    -- print(dsz)
-    -- print(string.format('loading gt from %s/gt%d-%d.mat', opt.datapath, startidx, endidx))
-    data.targets = mattorch.load(string.format('%s/gt%d-%d.mat', opt.datapath, startidx, endidx))
-    data.targets = data.targets['gt']
     data.inputs:resize(dsz[1], 1, dsz[2], dsz[3], dsz[4])
 
-    assert((#data.inputs)[1] == (#data.targets)[1])
+    data.targets = mattorch.load(string.format('%s/gt%d-%d.mat', opt.datapath, startidx, endidx))
+    data.targets = data.targets['gt']
 
-    -- padinputs = torch.Tensor(data.imgdata:size(1), 1, opt.kernelSize1[1] - 1 + data.imgdata:size(3),
-    --                              opt.kernelSize1[2] - 1 + data.imgdata:size(4),
-    --                              opt.kernelSize1[3] - 1 + data.imgdata:size(5)):fill(0)
-    -- padinputs[{{}, {1}, {(opt.kernelSize1[1] - 1) / 2 + 1, (opt.kernelSize1[1] - 1) / 2 + data.imgdata:size(3)},
-    --               {(opt.kernelSize1[2] - 1) / 2 + 1, (opt.kernelSize1[2] - 1) / 2 + data.imgdata:size(4)},
-    --               {(opt.kernelSize1[3] - 1) / 2 + 1, (opt.kernelSize1[3] - 1) / 2 + data.imgdata:size(5)}}] = data.imgdata
-    -- print('input size', #data.inputs)
-    -- print('padinput size', #padinputs)
-    -- print('target size', #data.targets)
+    data.coord = mattorch.load(string.format('%s/coord%d-%d.mat', opt.datapath, startidx, endidx))
+    data.coord = data.coord['coord']
+    -- data.inputs:resize(dsz[1], 1, dsz[2], dsz[3], dsz[4])
+
+    assert((#data.inputs)[1] == (#data.targets)[1] and (#data.targets)[1] == (#data.coord)[1])
 
     return data
 end
-
--- function volume3d:createDataSet(inputs, targets, which_set)
---     local input_v, target_v = dp.DataView(), dp.DataView()
---     input_v:forward('bchwd', inputs)
---     target_v:forward('bchwd', targets)
---     local ds = dp.DataSet{inputs=input_v, targets=target_v, which_set=which_set}
---     ds:ioShapes('bchwd', 'bchwd')
---     return ds
--- end
 
 return loader
