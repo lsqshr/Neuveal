@@ -47,9 +47,5 @@ end
 
 local predimg = predict(opt)
 
--- maxxy = predimg:max(3)
--- itorch.Image(maxxy)
-
 -- mattorch.save(string.format('%s/pred-scores.mat', opt.savepath), pred)
 mattorch.save(string.format('%s/pred-image.mat', opt.savepath), predimg)
-

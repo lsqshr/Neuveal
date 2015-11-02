@@ -3,7 +3,7 @@ require 'math'
 require 'nn'
 require 'optim'
 require 'math'
-require 'itorch'
+-- require 'itorch'
 
 local disp = require 'display'
 create = require 'nntrain.create_dcnn'
@@ -13,6 +13,8 @@ local function train(datasource, model, criterion, opt)
     -- create model and loss/grad evaluation function
     -- local model, criterion = create(opt)
     local params, grads = model:getParameters()
+
+    nbatch = datasource:get_nbatch()
 
     -- Downsample all the ground truth blocks to the size of the output layer
 
@@ -26,24 +28,21 @@ local function train(datasource, model, criterion, opt)
 
     print('Start Training')
     local epocherrors = {}
-    -- local epochwin = disp.plot({}, {labels={'epoch', 'trainerror'}, title='epoch error'}) 
-    -- local batchwin = disp.plot({}, {labels={'batch', 'trainerror'}, title='batch error'}) 
 
     for i = 1, opt.maxEpoch do
         print('epoch: ', i)
         ncase = 0
         time = sys.clock()
-        -- do one epoch
         print('<trainer> on training set:')
         print("<trainer> online epoch # " .. i .. ' [batchsize = ' .. opt.batchsize .. ']')
 
         local batcherrors={}
-        for b = 1, opt.nbatch do
+        for b = 1, nbatch do
             data = datasource:loadbatch(opt, b)
             local ninput = data.inputs:size(1)
             local trainerror = 0
             -- Display progress
-            xlua.progress(b, opt.nbatch)
+            xlua.progress(b, nbatch)
 
             -- return loss, grad
             local feval = function(x)
@@ -53,7 +52,6 @@ local function train(datasource, model, criterion, opt)
 
                 grads:zero()
                 local loss = 0
-
 
                 for t = 1, ninput do
                     local output = model:forward(data.inputs[t])
@@ -97,7 +95,6 @@ local function train(datasource, model, criterion, opt)
                 config = config or {eta0 = opt.learningRate,
                                  t0 = nbTrainingPatches * opt.t0}
                 _,_,average = optim.asgd(feval, params, config)
-
             else
                 error('unknown optimization method')
             end
@@ -117,7 +114,7 @@ local function train(datasource, model, criterion, opt)
             end
 
             -- batchwin = disp.plot(batcherrors, {win=batchwin}) 
-            plot = itorch.Plot():line(torch.range(1, b), batcherrors, 'blue', 'batch errors'):legend(true):title('Batch Plot'):draw()
+            -- plot = itorch.Plot():line(torch.range(1, b), batcherrors, 'blue', 'batch errors'):legend(true):title('Batch Plot'):draw()
             ncase = ncase + ninput
 
             -- Visualise weights
@@ -125,18 +122,17 @@ local function train(datasource, model, criterion, opt)
             weight = model:get(1).weight
             weight = torch.max(weight, 3)
             weight:resize((#weight)[1], 13, 13)
-            itorch.image(weight) 
+            -- itorch.image(weight) 
 
             weight = model:get(1).weight
             weight = torch.max(weight, 4)
             weight:resize((#weight)[1], 13, 13)
-            itorch.image(weight) 
+            -- itorch.image(weight) 
             
             weight = model:get(1).weight
             weight = torch.max(weight, 5)
             weight:resize((#weight)[1], 13, 13)
-            itorch.image(weight) 
-            -- itorch.image(model:get(2).weight)
+            -- itorch.image(weight) 
         end
 
         epocherr = torch.mean(torch.Tensor(batcherrors));
@@ -150,7 +146,7 @@ local function train(datasource, model, criterion, opt)
         time = time / ncase
         print("<trainer> time to learn 1 sample = " .. (time*1000) .. 'ms')
         -- epochwin = disp.plot(epocherrors, {win=epochwin}) 
-        plot = itorch.Plot():line(torch.range(1, i), epocherrors, 'red', 'epoch errors'):legend(true):title('Epoch Plot'):draw()
+        -- plot = itorch.Plot():line(torch.range(1, i), epocherrors, 'red', 'epoch errors'):legend(true):title('Epoch Plot'):draw()
 
         if opt.savemodel then
             local cache = {}
