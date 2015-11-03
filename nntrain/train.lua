@@ -34,12 +34,12 @@ local function train(datasource, model, criterion, opt)
         ncase = 0
         time = sys.clock()
         print('<trainer> on training set:')
-        print("<trainer> online epoch # " .. i .. ' [batchsize = ' .. opt.batchsize .. ']')
 
         local batcherrors={}
         for b = 1, nbatch do
             data = datasource:loadbatch(opt, b)
             local ninput = data.inputs:size(1)
+            print("<trainer> online epoch # " .. i .. ' [batchsize = ' .. ninput .. ']')
             local trainerror = 0
             -- Display progress
             xlua.progress(b, nbatch)

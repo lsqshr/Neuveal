@@ -1,20 +1,32 @@
--- Convert h5/mat to .t7
+-- Convert mat to .t7
+-- Assume the matlab file only has one field
 require 'torch'
 require 'paths'
+require 'mattorch'
+
+function tablelength(T)
+
+  local count = 0
+  for _ in pairs(T) do count = count + 1 end
+  return count
+end
 
 cmd = torch.CmdLine()
-cmd:option('--pathtofile', '')
-cmd:option('--pathtodata', '')
+cmd:option('--path2file', '.')
 opt = cmd:parse(arg or {})
 
-local hdf5 = require 'hdf5'
-local imgf = hdf5.open(opt.pathtofile)
-imgdata = imgf:read(opt.pathtodata):all():double()
-imgdata = imgdata:permute(4, 3, 2, 1)
+dir = paths.dirname(opt.path2file)
+fname = paths.basename(opt.path2file, '.mat')
 
-dir = paths.dirname(opt.pathtofile)
-fname = paths.basename(opt.pathtofile)
+paths.mkdir(paths.concat(dir, 't7'))
+newpath = paths.concat(dir, 't7', fname .. '.t7')
+-- print('saving to ' .. newpath)
 
-newpath = dir .. '/' .. fname .. '.t7'
-print('saving to ' .. newpath)
-torch.save(newpath, imgdata)
+mfile = mattorch.load(opt.path2file)
+
+assert(tablelength(mfile) == 1)
+
+for field in pairs(mfile) do
+	torch.save(newpath, mfile[field])
+end
+

@@ -24,10 +24,10 @@ function volume3d:loadbatch(opt, b)
     data.targets = {}
 
     -- Load Data and Make the dp.BaseSet
-    local mattorch = require 'mattorch'
+    -- local mattorch = require 'mattorch'
 
-    data.inputs = mattorch.load(self.blocklist[b])
-    data.inputs = data.inputs['blocks']
+    data.inputs = torch.load(self.blocklist[b])
+    -- data.inputs = data.inputs['blocks']
     maxinput = torch.max(data.inputs)
     maxmat = torch.Tensor(data.inputs:size(1), data.inputs:size(2),
                           data.inputs:size(3), data.inputs:size(4)):fill(1/maxinput)
@@ -35,11 +35,11 @@ function volume3d:loadbatch(opt, b)
     dsz = #data.inputs
     data.inputs:resize(dsz[1], 1, dsz[2], dsz[3], dsz[4])
 
-    data.targets = mattorch.load(self.gtlist[b])
-    data.targets = data.targets['gt']
+    data.targets = torch.load(self.gtlist[b])
+    -- data.targets = data.targets['gt']
 
-    data.coord = mattorch.load(self.coordlist[b], opt.datapath, startidx, endidx)
-    data.coord = data.coord['coord']
+    data.coord = torch.load(self.coordlist[b])
+    -- data.coord = data.coord['coord']
 
     assert((#data.inputs)[1] == (#data.targets)[1] and (#data.targets)[1] == (#data.coord)[1])
 

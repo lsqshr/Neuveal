@@ -52,8 +52,8 @@ function singlegt(imgfilename, swcfilename, foreground, dilateradius, blocksize,
 	bdistnorm(bdistnorm > 1) = 1;
 	bdistnorm = exp(bdistnorm) - 1;
 
-    save(fullfile(savepath, sprintf('B.mat')), 'B');
-    save(fullfile(savepath, sprintf('bdistnorm.mat')), 'bdistnorm');
+%     save(fullfile(savepath, sprintf('B.mat')), 'B');
+%     save(fullfile(savepath, sprintf('bdistnorm.mat')), 'bdistnorm');
     
     % Dilate the Binary map for sampling
     [x,y,z] = meshgrid(-dilateradius:dilateradius, ...
@@ -117,6 +117,8 @@ function singlegt(imgfilename, swcfilename, foreground, dilateradius, blocksize,
 			end
 	    end
     end
+    
+    save(fullfile(savepath, 'raw.mat'), 'img');
 end
 
 
