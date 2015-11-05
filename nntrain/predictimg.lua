@@ -42,6 +42,10 @@ function predictimg(filepath, model, kernelsize)
 
 			    if bctr == batchsize then
 				    print(string.format('Predicting %.2f%%', 100 * pctr / (img:size(1) * img:size(2) * img:size(3))))
+				    maxinput = torch.max(blocks)
+				    maxmat = torch.Tensor(blocks:size(1), blocks:size(2),
+				                          blocks:size(3), blocks:size(4)):fill(1/maxinput)
+				    blocks = blocks:cmul(maxmat) -- Normalise the inputs
 
 					pred = model:forward(blocks)
 

@@ -50,3 +50,7 @@ luac.out
 *.t7
 *.h5
 *.log
+/.ipynb_checkpoints/Untitled0-checkpoint.ipynb
+/.ipynb_checkpoints/Untitled1-checkpoint.ipynb
+/.ipynb_checkpoints/cnn3d-firstworking-1000-checkpoint.ipynb
+/.ipynb_checkpoints/fold1-checkpoint.ipynb
