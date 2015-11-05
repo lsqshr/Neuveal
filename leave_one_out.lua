@@ -83,7 +83,7 @@ for i = 1, ncase do
 		fold = {}
 		case2work = casedirs[i]
 		print('working on ' .. case2work)
-	    predimg = predictimg(paths.concat(opt.datapath, case2work, 'raw.mat'), model, opt.kernelSize)
+	    predimg = predictimg(paths.concat(opt.datapath, case2work, 'raw.mat'), model, opt.kernelSize, 100)
 		fold.img = img
 		fold.model = model
 

@@ -11,6 +11,8 @@ function singlegt(imgfilename, swcfilename, foreground, dilateradius, blocksize,
 
 	[pathstr, ~, ~] = fileparts(mfilename('fullpath'));
 	addpath(genpath(fullfile(pathstr, 'FastMarching_version3b')));
+
+	addpath(fullfile(pathstr, '..', '..', '..', 'v3d', 'v3d_external', 'matlab_io_basicdatatype'))
     
 	% Load V3DRAW
 	img = load_v3d_raw_img_file(imgfilename);

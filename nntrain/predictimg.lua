@@ -2,16 +2,16 @@ require 'torch'
 require 'dp'
 require 'nn'
 require 'nntrain.volume3d'
+require 'xlua'
 -- require 'itorch'
 -- require 'mattorch'
 
-function predictimg(filepath, model, kernelsize)
-    batchsize = 100
+function predictimg(filepath, model, kernelsize, batchsize)
     coords = {}
     blocks = torch.zeros(batchsize, 1, kernelsize[1], kernelsize[2], kernelsize[3])
 
-	f = mattorch.load(filepath)
-	img = f['img']
+	img = torch.load(filepath)
+	-- img = f['img']
 	padimg = torch.zeros(img:size(1) + kernelsize[1] - 1,
 		                  img:size(2) + kernelsize[2] - 1,
 		                  img:size(3) + kernelsize[3] - 1)
@@ -41,10 +41,13 @@ function predictimg(filepath, model, kernelsize)
 			    coords[bctr] = {x, y, z}
 
 			    if bctr == batchsize then
-				    print(string.format('Predicting %.2f%%', 100 * pctr / (img:size(1) * img:size(2) * img:size(3))))
+				    -- print(string.format('Predicting %.2f%%', 100 * pctr / (img:size(1) * img:size(2) * img:size(3))))
+				    xlua.progress(pctr, img:size(1) * img:size(2) * img:size(3))
 				    maxinput = torch.max(blocks)
 				    maxmat = torch.Tensor(blocks:size(1), blocks:size(2),
-				                          blocks:size(3), blocks:size(4)):fill(1/maxinput)
+				                          blocks:size(3), blocks:size(4), blocks:size(5)):fill(1/maxinput)
+				    -- print(#maxmat)
+				    -- print(#blocks)
 				    blocks = blocks:cmul(maxmat) -- Normalise the inputs
 
 					pred = model:forward(blocks)
