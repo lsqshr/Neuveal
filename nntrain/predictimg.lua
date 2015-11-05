@@ -2,8 +2,8 @@ require 'torch'
 require 'dp'
 require 'nn'
 require 'nntrain.volume3d'
-require 'itorch'
-require 'mattorch'
+-- require 'itorch'
+-- require 'mattorch'
 
 function predictimg(filepath, model, kernelsize)
     batchsize = 100

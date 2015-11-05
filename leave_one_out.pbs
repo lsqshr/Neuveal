@@ -6,9 +6,9 @@
 #PBS -q compute 
 
 #     how many cpus?
-#PBS -l ncpus=16
+#PBS -l ncpus=24
 
-#PBS -l pmem=6000mb
+#PBS -l pmem=4000mb
 
 # How long to run the job? (hours:minutes:seconds)
 #PBS -l walltime=96:0:0
@@ -18,4 +18,6 @@
 
 #     Environmental varibles to make it work:
 #PBS -J 1-8
-luajit leave_one_out.lua --singlefold 1 --foldidx ${PBS_ARRAY_INDEX} --datapath ./data/OP --threads 16
+module load torch
+cd /project/RDS-FEI-NRMMCI-RW/SQ-Workspace/Neuveal
+luajit leave_one_out.lua --singlefold 1 --foldidx ${PBS_ARRAY_INDEX} --datapath ./data/OP --threads 24 --outdir oncompute_30feat --maxEpoch 10 --nout '{30,200,1}

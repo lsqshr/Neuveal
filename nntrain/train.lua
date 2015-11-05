@@ -5,7 +5,7 @@ require 'optim'
 require 'math'
 -- require 'itorch'
 
-local disp = require 'display'
+-- local disp = require 'display'
 create = require 'nntrain.create_dcnn'
 
 local function train(datasource, model, criterion, opt)
@@ -152,7 +152,7 @@ local function train(datasource, model, criterion, opt)
             local cache = {}
             cache.model = model
             cache.opt = opt
-            torch.save(opt.savemodelprefix .. '_iter_' .. tostring(i) .. '.t7', model) -- Cache the model after every iteration
+            torch.save(paths.concat(opt.outdir, opt.savemodelprefix .. '_iter_' .. tostring(i) .. '.t7'), model) -- Cache the model after every iteration
         end
     end
 

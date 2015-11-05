@@ -34,11 +34,12 @@ cmd:option('--weightDecay', 1e-4, 'weight decay')
 cmd:option('--learningRateDecay', 1e-3, 'learningRateDecay')
 cmd:option('--singlefold', 1)
 cmd:option('--foldidx', 1)
+cmd:option('--outdir', 'localrun')
 
 opt = cmd:parse(arg or {})
 opt.kernelSize = table.fromString(opt.kernelSize)
 opt.nout = table.fromString(opt.nout)
-print(opt)
+-- print(opt)
 
 torch.setnumthreads(opt.threads)
 local dcnn, crit = create_dcnn(opt) -- Create the CNN architecture
@@ -87,6 +88,6 @@ for i = 1, ncase do
 		fold.model = model
 
 		-- Save the models and statistics
-	    torch.save('data/model_fold_' .. i .. '_' .. case2work .. '.t7', fold)
+	    torch.save(paths.concat('data', opt.outdir, 'model_fold_' .. i .. '_' .. case2work .. '.t7', fold))
 	end
 end
