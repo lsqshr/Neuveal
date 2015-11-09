@@ -12,34 +12,37 @@ local train = require 'nntrain.train'
 require 'util.celebrate'
 
 cmd = torch.CmdLine()
-cmd:option('--datapath', '/home/siqi/hpc-data1/SQ-Workspace/Neuveal/data/OP')
+cmd:option('--datapath', '/home/siqi/data/OP-sub')
 cmd:option('--kernelSize', '{13, 13, 13}') 
-cmd:option('--nout', '{120, 200, 1}', 'Number of the output feature maps') 
+cmd:option('--nout', '{30, 200, 1}', 'Number of the output feature maps') 
 cmd:option('--padding', false)
-cmd:option('--maxEpoch', 30)
+cmd:option('--maxEpoch', 15)
 cmd:option('--print_every', 1)
 cmd:option('--savemodel', true)
-cmd:option('--savemodelprefix', 'op1')
+cmd:option('--savemodelprefix', 'op-sub')
 cmd:option('--accUpdate', true, 'accumulate gradients inplace')
 cmd:option('--momentum', 1.2, 'momentum')
 cmd:option('--learningRate', 0.01, 'learning rate at t=0')
 cmd:option('--maxOutNorm', 1, 'max norm each layers output neuron weights')
 cmd:option('--silent', false)
--- cmd:option('--batchsize', 1000)
 cmd:option('--optimization', 'CG')
 cmd:option('--maxIter', 10)
-cmd:option('--threads', 4)
+cmd:option('--threads', 8)
 cmd:option('--visualize', true, 'visualize input data and weights during training')
 cmd:option('--weightDecay', 1e-4, 'weight decay')
 cmd:option('--learningRateDecay', 1e-3, 'learningRateDecay')
 cmd:option('--singlefold', 1)
 cmd:option('--foldidx', 1)
-cmd:option('--outdir', 'localrun')
+cmd:option('--outdir', 'data/op-sub-30')
+cmd:option('--plotfilename', 'plot.html')
 
 opt = cmd:parse(arg or {})
 opt.kernelSize = table.fromString(opt.kernelSize)
 opt.nout = table.fromString(opt.nout)
 -- print(opt)
+
+--Create the outdir if it does not exist
+paths.mkdir(opt.outdir)
 
 torch.setnumthreads(opt.threads)
 local dcnn, crit = create_dcnn(opt) -- Create the CNN architecture
@@ -84,7 +87,7 @@ for i = 1, ncase do
 		case2work = casedirs[i]
 		print('working on ' .. case2work)
 	    predimg = predictimg(paths.concat(opt.datapath, case2work, 'raw.mat'), model, opt.kernelSize, 100)
-		fold.img = img
+		fold.img = predimg
 		fold.model = model
 
 		-- Save the models and statistics

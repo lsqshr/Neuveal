@@ -54,3 +54,12 @@ luac.out
 /.ipynb_checkpoints/Untitled1-checkpoint.ipynb
 /.ipynb_checkpoints/cnn3d-firstworking-1000-checkpoint.ipynb
 /.ipynb_checkpoints/fold1-checkpoint.ipynb
+
+*.swc
+*.v3draw
+*.v3dpbd
+*.ano
+*.pbs
+*.txt
+*.ipynb
+*.html

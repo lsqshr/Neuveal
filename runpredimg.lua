@@ -7,10 +7,12 @@ cmd:option('--modelpath', 'op1_iter_1.t7')
 cmd:option('--kernelSize', '{13, 13, 13}') 
 cmd:option('--batchSize', 500)
 cmd:option('--outimg', 'predimg.t7')
+cmd:option('--threads', 4)
 
 opt = cmd:parse(arg or {})
 opt.kernelSize = table.fromString(opt.kernelSize)
 -- opt.nout = table.fromString(opt.nout)
+torch.setnumthreads(opt.threads)
 
 model = torch.load(opt.modelpath)
 pimg = predictimg(opt.filepath, model, opt.kernelSize, opt.batchSize)

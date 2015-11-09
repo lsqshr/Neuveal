@@ -1,5 +1,5 @@
 path="$1"
-find -name path
+# find -name path
 
 find $path -name '*.mat' | while read line; do
     echo "Processing file '$line'"

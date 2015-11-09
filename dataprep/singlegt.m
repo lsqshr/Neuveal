@@ -5,9 +5,9 @@ function singlegt(imgfilename, swcfilename, foreground, dilateradius, blocksize,
 % foreground: the foreground threshold for radius estimation
 % dM: The expected largest radius
 
-    if ~exist(savepath, 'dir')
-        mkdir(savepath);
-    end
+    % if ~exist(savepath, 'dir')
+    %     mkdir(savepath);
+    % end
 
 	[pathstr, ~, ~] = fileparts(mfilename('fullpath'));
 	addpath(genpath(fullfile(pathstr, 'FastMarching_version3b')));

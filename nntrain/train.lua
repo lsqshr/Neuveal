@@ -115,6 +115,7 @@ local function train(datasource, model, criterion, opt)
 
             -- batchwin = disp.plot(batcherrors, {win=batchwin}) 
             -- plot = itorch.Plot():line(torch.range(1, b), batcherrors, 'blue', 'batch errors'):legend(true):title('Batch Plot'):draw()
+            -- plot:save(opt.plotfilename)
             ncase = ncase + ninput
 
             -- Visualise weights
