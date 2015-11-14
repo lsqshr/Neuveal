@@ -15,6 +15,7 @@ local function train(datasource, model, criterion, opt)
     local params, grads = model:getParameters()
 
     nbatch = datasource:get_nbatch()
+    print(string.format('nbatch: %d\n', nbatch))
 
     -- Downsample all the ground truth blocks to the size of the output layer
 

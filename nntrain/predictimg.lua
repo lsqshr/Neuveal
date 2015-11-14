@@ -12,9 +12,12 @@ function predictimg(filepath, model, kernelsize, batchsize)
 
 	img = torch.load(filepath)
 	-- img = f['img']
-	padimg = torch.zeros(img:size(1) + kernelsize[1] - 1,
-		                  img:size(2) + kernelsize[2] - 1,
-		                  img:size(3) + kernelsize[3] - 1)
+	padimg = torch.zeros(img:size(1) + 2 * kernelsize[1],
+		                 img:size(2) + 2 * kernelsize[2],
+		                 img:size(3) + 2 * kernelsize[3])
+	padimg[{{kernelsize[1] + 1, kernelsize[1] + img:size(1)}, 
+	       {kernelsize[2] + 1, kernelsize[2] + img:size(2)}, 
+	       {kernelsize[3] + 1, kernelsize[3] +  img:size(3)}}] = img;
 	predimg = torch.zeros(img:size(1), img:size(2), img:size(3))
 
 	-- pad the image
@@ -35,31 +38,32 @@ function predictimg(filepath, model, kernelsize, batchsize)
 
 				-- for each location make the prediction
 				block = padimg[{{padx - kernelradius[1], padx + kernelradius[1]},
-					                                    {pady - kernelradius[2], pady + kernelradius[2]},
-					                                    {padz - kernelradius[3], padz + kernelradius[3]}}]
+                                {pady - kernelradius[2], pady + kernelradius[2]},
+                                {padz - kernelradius[3], padz + kernelradius[3]}}]
+
 			    blocks[{{bctr}, 1, {}, {}, {}}] = block
 			    coords[bctr] = {x, y, z}
 
 			    if bctr == batchsize then
-				    -- print(string.format('Predicting %.2f%%', 100 * pctr / (img:size(1) * img:size(2) * img:size(3))))
-				    xlua.progress(pctr, img:size(1) * img:size(2) * img:size(3))
+			    	print('maxinput: ')
+			    	print(maxinput)
 				    maxinput = torch.max(blocks)
-				    maxmat = torch.Tensor(blocks:size(1), blocks:size(2),
-				                          blocks:size(3), blocks:size(4), blocks:size(5)):fill(1/maxinput)
-				    -- print(#maxmat)
-				    -- print(#blocks)
-				    blocks = blocks:cmul(maxmat) -- Normalise the inputs
+				    if maxinput > 0 then
+				    	-- print('<<<<<<<<<<<<<<<<<<<<<<maxinput: ')
+				    	-- print(maxinput)
+					    maxmat = torch.Tensor(blocks:size(1), blocks:size(2),
+					                          blocks:size(3), blocks:size(4), blocks:size(5)):fill(1/maxinput)
+					    blocks = blocks:cmul(maxmat) -- Normalise the inputs
+					end
 
-					pred = model:forward(blocks)
-
-                    for b = 1, bctr do
-						predimg[{{coords[b][1]}, {coords[b][2]}, {coords[b][3]}}] = pred[b]
+					for i = 1, batchsize do
+						predimg[{{coords[i][1]}, {coords[i][2]}, {coords[i][3]}}] = model:forward(blocks[i])
+					    xlua.progress(pctr, img:size(1) * img:size(2) * img:size(3))
+						pctr = pctr + 1
 					end
 
 			    	bctr = 0
 				end
-
-				pctr = pctr + 1
 
 			end
 		end
