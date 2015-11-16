@@ -13,7 +13,8 @@ require 'util.celebrate'
 
 cmd = torch.CmdLine()
 cmd:option('--datapath', '/home/siqi/hpc-data1/SQ-Workspace/Neuveal/data/OP-sub')
-cmd:option('--kernelSize', '{13, 13, 13}') 
+cmd:option('--kernelsize', '{13, 13, 13}') 
+cmd:option('--batchsize', 20000) 
 cmd:option('--nout', '{30, 200, 1}', 'Number of the output feature maps') 
 cmd:option('--padding', false)
 cmd:option('--maxEpoch', 15)
@@ -32,12 +33,13 @@ cmd:option('--visualize', true, 'visualize input data and weights during trainin
 cmd:option('--weightDecay', 1e-4, 'weight decay')
 cmd:option('--learningRateDecay', 1e-3, 'learningRateDecay')
 cmd:option('--singlefold', 1)
-cmd:option('--foldidx', 1)
+cmd:option('--foldidx', 1) -- if foldidx == -1 it does not leave any case out, just train with all the data
 cmd:option('--outdir', 'data/op-sub-30')
 cmd:option('--plotfilename', 'plot.html')
+cmd:option('--iscuda', 0)
 
 opt = cmd:parse(arg or {})
-opt.kernelSize = table.fromString(opt.kernelSize)
+opt.kernelsize = table.fromString(opt.kernelsize)
 opt.nout = table.fromString(opt.nout)
 -- print(opt)
 
@@ -58,7 +60,7 @@ local ncase = #casedirs
 
 for i = 1, ncase do 
 
-	if (opt.singlefold == 1 and opt.foldidx == i)  or opt.singlefold ~= 1 then
+	if (opt.singlefold == 1 and opt.foldidx == i)  or opt.singlefold ~= 1 or opt.foldidx == -1 then
 
 		-- Sort the cases to perform leave-one-out validation
 		local trainblock = {}
@@ -95,7 +97,7 @@ for i = 1, ncase do
 	    torch.save(paths.concat(opt.outdir, 'model_fold_' .. i .. '.t7'), model)
 
 		-- print('working on ' .. case2work)
-	 --    predimg = predictimg(paths.concat(opt.datapath, case2work, 't7', 'raw.t7'), model, opt.kernelSize, 100)
+	 --    predimg = predictimg(paths.concat(opt.datapath, case2work, 't7', 'raw.t7'), model, opt.kernelsize, 100)
 
 		-- -- Save the models and statistics
 	 --    torch.save(paths.concat('data', opt.outdir, 'model_fold_' .. i .. '_' .. case2work .. '.t7', predimg))

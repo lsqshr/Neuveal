@@ -1,25 +1,39 @@
-function singlegt(imgfilename, swcfilename, foreground, dilateradius, blocksize, batchsize, savepath)
+function singlegt(imgfilename, swcfilename, foreground, dilateradius, blocksize, batchsize, scale, savepath)
 % Make the DT transform from the ground truth tracing of a single case
 % imgfilename: V3DRaw image file path
 % swcfilename: swc file path
 % foreground: the foreground threshold for radius estimation
-% dM: The expected largest radius
-
-    % if ~exist(savepath, 'dir')
-    %     mkdir(savepath);
-    % end
+% dilateradius: the radius to dilate the binary map
+% blocksize: the size of blocks to extract
+% batchsize: #blocks to save in a file
+% scale: image will be rescaled in 1/scale regarding in axis
 
 	[pathstr, ~, ~] = fileparts(mfilename('fullpath'));
 	addpath(genpath(fullfile(pathstr, 'FastMarching_version3b')));
 
 	addpath(fullfile(pathstr, '..', '..', '..', 'v3d', 'v3d_external', 'matlab_io_basicdatatype'))
-    
+   
+	if ~exist(savepath, 'dir')
+		mkdir(savepath);
+	end  
+
+	[~,basename, ~] = fileparts(imgfilename)
 	% Load V3DRAW
 	img = load_v3d_raw_img_file(imgfilename);
-	sz = size(img);
 
 	% Load SWC
 	swc = load_v3d_swc_file(swcfilename);
+
+    % Rescale img	
+    if scale ~= 1
+    	img = imresize(img, scale);
+    	img = permute(img, [3, 1, 2]);
+    	imresize(img, [size(img, 1) * scale, size(img, 2)]);
+    	img = permute(img, [2, 3, 1]);
+    	swc(:, 3:5) = swc(:, 3:5) * scale;
+    end
+
+	sz = size(img);
 
 	% Use GT to generate a binary map
 	bimg = img>foreground;
@@ -54,9 +68,6 @@ function singlegt(imgfilename, swcfilename, foreground, dilateradius, blocksize,
 	bdistnorm(bdistnorm > 1) = 1;
 	bdistnorm = exp(bdistnorm) - 1;
 
-%     save(fullfile(savepath, sprintf('B.mat')), 'B');
-%     save(fullfile(savepath, sprintf('bdistnorm.mat')), 'bdistnorm');
-    
     % Dilate the Binary map for sampling
     [x,y,z] = meshgrid(-dilateradius:dilateradius, ...
                        -dilateradius:dilateradius, ...
@@ -85,27 +96,41 @@ function singlegt(imgfilename, swcfilename, foreground, dilateradius, blocksize,
     nvox = sum(padB(:));
     voxidx = find(padB > 0);
     voxidx = voxidx( randperm(numel(voxidx)) );
-    coord = zeros(3, batchsize);
-    blocks = zeros(blocksize, blocksize, blocksize, batchsize);
-    gt = zeros(1, batchsize);
+    
+    if nvox > batchsize
+	    coord = zeros(3, batchsize);
+	    blocks = zeros(blocksize, blocksize, blocksize, batchsize);
+	    gt = zeros(1, batchsize);
+	else
+
+	    coord = zeros(3, nvox);
+	    blocks = zeros(blocksize, blocksize, blocksize, nvox);
+	    gt = zeros(1, nvox);
+	end
+
     startidx = 1;
 	
     for i = 1 : nvox
+
     	fprintf('Extracting %d/%d -- %.3f%%\n', i, nvox, 100*i/nvox);
         [x, y, z] = ind2sub(size(padB), voxidx(i));
         blockidx = mod(i, batchsize)+1;
 
         % The order of saving blocks : <x, y, z, idx>. This order is for loading .mat in torch
-        coord(:, blockidx) = [x, y, z];
-        blocks(:, :, :, blockidx) = padimg(x - (blocksize - 1)/2 : x + (blocksize - 1)/2, ...
-        	                            y - (blocksize - 1)/2 : y + (blocksize - 1)/2, ...
-        	                            z - (blocksize - 1)/2 : z + (blocksize - 1)/2);
-        gt(:, blockidx) = paddist(x, y, z);
+        try
+            coord(:, blockidx) = [x, y, z];
+            blocks(:, :, :, blockidx) = padimg(x - (blocksize - 1)/2 : x + (blocksize - 1)/2, ...
+                                            y - (blocksize - 1)/2 : y + (blocksize - 1)/2, ...
+                                            z - (blocksize - 1)/2 : z + (blocksize - 1)/2);
+            gt(:, blockidx) = paddist(x, y, z);
+        catch exception
+            disp(exception)
+        end
         
         if mod(i, batchsize) == 0 || i == nvox
-	        save(fullfile(savepath, sprintf('coord%d-%d.mat', startidx, i)), 'coord');
-	        save(fullfile(savepath, sprintf('blocks%d-%d.mat', startidx, i)), 'blocks');
-	        save(fullfile(savepath, sprintf('gt%d-%d.mat', startidx, i)), 'gt');
+	        save(fullfile(savepath, sprintf('coord%d-%d_%s.mat', startidx, i, basename)), 'coord');
+	        save(fullfile(savepath, sprintf('blocks%d-%d_%s.mat', startidx, i, basename)), 'blocks');
+	        save(fullfile(savepath, sprintf('gt%d-%d_%s.mat', startidx, i, basename)), 'gt');
         	startidx = startidx + batchsize;
 
         	if nvox - i > batchsize
@@ -117,10 +142,12 @@ function singlegt(imgfilename, swcfilename, foreground, dilateradius, blocksize,
 			    blocks = zeros(blocksize, blocksize, blocksize, nvox - i);
 			    gt = zeros(1, nvox - i);
 			end
+
 	    end
     end
     
-    save(fullfile(savepath, 'raw.mat'), 'img');
+    save(fullfile(savepath, sprintf('raw_%s.mat', basename)), 'img');
+    save(fullfile(savepath, sprintf('swc_%s.mat', basename)), 'swc');
 end
 
 

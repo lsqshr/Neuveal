@@ -2,8 +2,6 @@ require 'torch'
 require 'math'
 require 'nn'
 require 'optim'
-require 'math'
--- require 'itorch'
 
 -- local disp = require 'display'
 create = require 'nntrain.create_dcnn'
@@ -12,7 +10,14 @@ local function train(datasource, model, criterion, opt)
     ------------------------------------------------------------------------
     -- create model and loss/grad evaluation function
     -- local model, criterion = create(opt)
+    if opt.iscuda == 1 then
+        model = model:float()
+        criterion = criterion:float()
+        model = model:cuda()
+    end
+
     local params, grads = model:getParameters()
+    collectgarbage()
 
     nbatch = datasource:get_nbatch()
     print(string.format('nbatch: %d\n', nbatch))
@@ -54,14 +59,31 @@ local function train(datasource, model, criterion, opt)
                 grads:zero()
                 local loss = 0
 
-                for t = 1, ninput do
-                    local output = model:forward(data.inputs[t])
-                    local err = criterion:forward(output, data.targets[t])
-                    loss = loss + err
+                if opt.iscuda == 1 then
+                    data.targets = data.targets:float()
+                    data.inputs = data.inputs:float()
+                    data.inputs = data.inputs:cuda()
+                    local output = model:forward(data.inputs) -- Forward all at once
+                    output = output:float()
+                    local df = torch.FloatTensor(output:size(1), output:size(2))
+                    for t = 1, ninput do
+                        local err = criterion:forward(output[t], data.targets[t])
+                        loss = loss + err
+                        df[t] = criterion:backward(output[t], data.targets[t])
+                    end
 
-                    -- backward
-                    model:backward(data.inputs[t], criterion:backward(output, data.targets[t]))
+                    model:backward(data.inputs, df:cuda())
+                else
+                    for t = 1, ninput do
+                        local output = model:forward(data.inputs[t])
+                        local err = criterion:forward(output, data.targets[t])
+                        loss = loss + err
+
+                        -- backward
+                        model:backward(data.inputs[t], criterion:backward(output, data.targets[t]))
+                    end
                 end
+
                 grads:div(ninput)
                 loss = loss/ninput
                 trainerror = loss
@@ -137,7 +159,10 @@ local function train(datasource, model, criterion, opt)
             -- itorch.image(weight) 
         end
 
-        epocherr = torch.mean(torch.Tensor(batcherrors));
+        if batcherrors:size() > 0 then
+            epocherr = torch.mean(torch.Tensor(batcherrors));
+        end
+        
         if epocherr == 1/0 or epocherr == 0/0 then
             table.insert(epocherrors, 1)
         else

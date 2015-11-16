@@ -9,7 +9,7 @@ function volume3d:__init(opt, blocklist, gtlist, coordlist)
     self.blocklist = blocklist
     self.gtlist = gtlist
     self.coordlist = coordlist
-        
+
     DataSource.__init(self, {
         train_set=self:trainSet(), valid_set=self:validSet(),
         test_set=self:testSet(), input_preprocess=input_preprocess,

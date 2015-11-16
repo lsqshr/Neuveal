@@ -1,5 +1,5 @@
 require 'dp'
--- require 'cunn'
+require 'cunn'
 require 'nntrain.volume3d'
 local create = require 'nntrain.create_dcnn'
 local train = require 'nntrain.train'
